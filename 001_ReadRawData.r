@@ -4,11 +4,6 @@
 ##------------------------------------------------------------------
 
 ##------------------------------------------------------------------
-## Load libraries
-##------------------------------------------------------------------
-library(data.table)
-
-##------------------------------------------------------------------
 ## Clear the workspace
 ##------------------------------------------------------------------
 rm(list=ls())
@@ -23,8 +18,14 @@ setwd("/Users/alexstephens/Development/kaggle/tradeshift/data/raw")
 ## Step 1:  Convert each .csv file into an .Rdata file
 ##******************************************************************
 
-## processed data directory
+##------------------------------------------------------------------
+## define the processed data directory
+##------------------------------------------------------------------
 proc.dir    <- "/Users/alexstephens/Development/kaggle/tradeshift/data/proc/"
+
+##------------------------------------------------------------------
+## load and save each of the files indivually
+##------------------------------------------------------------------
 
 ## read the trainLabels file
 trainLabels.raw <- read.csv("trainLabels.csv", header = TRUE, sep = ",")
@@ -40,7 +41,3 @@ rm(test.raw)
 train.raw <- read.csv("train.csv", header = TRUE, sep = ",")
 save(train.raw, file=paste0(proc.dir, "001_train.Rdata"))
 rm(train.raw)
-
-
-## hashed fields
-##col.hashed  <- c("x3", "x4", "x34", "x35", "x61", "x64", "x65", "x91", "x94", "x95")
