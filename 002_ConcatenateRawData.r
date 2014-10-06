@@ -28,7 +28,7 @@ load("001_test.Rdata")      ##  545082 x 146
 ## concatenate the datasets
 ##------------------------------------------------------------------
 comb.raw    <- rbind(train.raw, test.raw)   ## ;rm(train.raw, test.raw)
-comb.out    <- comb.raw
+comb.mod    <- comb.raw
 
 ##------------------------------------------------------------------
 ## variables columns
@@ -92,10 +92,10 @@ unq.all.hashed.mat[,1]  <- unq.all.hashed.char
 unq.all.hashed.mat[,2]  <- as.numeric(unq.all.hashed.fac)
 
 ##------------------------------------------------------------------
-## loop over the text fields and create the
+## loop over the text fields and create a small-text equivalent
 ##------------------------------------------------------------------
 for (i in 1:num.hashed) {
-    comb.out[, col.hashed[i]] <-  formatC(
+    comb.mod[, col.hashed[i]] <-  formatC(
                                     match(as.character(comb.raw[, col.hashed[i]]), unq.all.hashed.mat[,1]),
                                     width = 7,
                                     format = "d",
@@ -113,7 +113,7 @@ for (i in 1:num.hashed) {
 for (i in 1:num.cols) {
     
     tmp.col     <- data.cols[i]
-    tmp.dat     <- comb.out[, tmp.col]
+    tmp.dat     <- comb.mod[, tmp.col]
     tmp.class   <- data.class[tmp.col]
     
     ##------------------------------------------------------------------
@@ -127,14 +127,15 @@ for (i in 1:num.cols) {
         ## yes/no/blank
         if (tmp.lvl.num == 3) {
             
-            tmp.red <- as.integer(ifelse(tmp.dat == "", -1, ifelse(tmp.dat == "YES", 1, 0)))
+            levels(tmp.dat) <- c("BL", "NO", "YES")
+            tmp.red         <- tmp.dat
             
-        ## yes/no
+        ## yes/no (no change)
         } else if (tmp.lvl.num == 2) {
             
-            tmp.red <- as.integer(ifelse(tmp.dat == "YES", 1, 0))
+            tmp.red <- tmp.dat
             
-        ## no change for remaining factor fields
+        ## all other factors (no change)
         } else {
             
             tmp.red <- tmp.dat
@@ -158,16 +159,37 @@ for (i in 1:num.cols) {
     ##------------------------------------------------------------------
     ## update output dataset
     ##------------------------------------------------------------------
-    comb.out[, tmp.col]    <- tmp.red
+    comb.mod[, tmp.col]    <- tmp.red
 }
 
+
+##******************************************************************
+## Step 4:  Expand non-hashed factor variables into dummy variables
+##******************************************************************
+
+## identify factors that are not text fields
+col.factor  <- names(sapply(comb.mod, class)[which(sapply(comb.mod, class) == "factor")])
+col.dummies <- setdiff(col.factor, col.hashed)
+
+## create a formula used by dummyVars
+frm.dummies <- as.formula(paste0("~ ",paste(col.dummies, collapse=" + ")))
+
+## define the dummy variables and create a list to hold the expanded values
+dummy.list  <- list()
+for (i in 1:length(col.dummies)) {
+    tmp.var                 <- col.dummies[i]
+    tmp.dummies             <- dummyVars(as.formula(paste0("~",tmp.var)), data=comb.mod)
+    dummy.list[[tmp.var]]   <- predict(tmp.dummies, newdata = comb.mod[,c("id",tmp.var)])
+}
 
 
 ##------------------------------------------------------------------
 ## save the results
 ##------------------------------------------------------------------
-save(comb.raw, id.train, id.test, file="002_ConcatenatedRawData.Rdata")
-save(comb.out, id.train, id.test, file="002_ConcatenatedModData.Rdata")
+save(comb.raw,      id.train, id.test, file="002_ConcatRawData.Rdata")
+save(comb.mod,      id.train, id.test, file="002_ConcatModData.Rdata")
+save(dummy.list,    id.train, id.test, file="002_ConcatModData_DummyList.Rdata")
+
 
 
 
